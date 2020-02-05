@@ -1,8 +1,7 @@
-package com.ccumiskey.payrollbyspring;
+package com.ccumiskey.payrollbyspring.employee;
 
 import com.ccumiskey.payrollbyspring.errorhandling.EmployeeNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -18,7 +17,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @Slf4j
-class EmployeeController {
+public class EmployeeController {
     private final EmployeeRepository employeeRepo;
     private final EmployeeModelAssembler assembler;
 
@@ -43,13 +42,14 @@ class EmployeeController {
     /**
      * Create a new employee in the database
      * @param newEmployee: the new employee to be added to the database
-     * @return
+     * @return an HTTP 201 (Created) status message
      * @throws URISyntaxException
      */
     @PostMapping("/employees")
     ResponseEntity<?> newEmployee(@RequestBody Employee newEmployee) throws URISyntaxException {
         EntityModel<Employee> entityModel = assembler.toModel(employeeRepo.save(newEmployee));
-        return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
+        return ResponseEntity
+                .created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
                 .body(entityModel);
     }
 
@@ -69,11 +69,12 @@ class EmployeeController {
      * Given an employee's ID, update their details.
      * @param updatedEmployee: The updated employee data to be inserted
      * @param id: The ID of the updated employee
-     * @return
+     * @return a more detailed HTTP response code than a mere "200 OK"
      */
     @PutMapping("/employees/{id}")
-    Employee replaceEmployee(@RequestBody Employee updatedEmployee, @PathVariable Long id){
-        return employeeRepo.findById(id)
+    ResponseEntity<?> replaceEmployee(@RequestBody Employee updatedEmployee, @PathVariable Long id)
+            throws URISyntaxException{
+        Employee newEmployee = employeeRepo.findById(id)
                 .map(employee -> {
                     employee.setName(updatedEmployee.getName());
                     employee.setRole(updatedEmployee.getRole());
@@ -82,6 +83,9 @@ class EmployeeController {
                     updatedEmployee.setId(id);
                     return employeeRepo.save(updatedEmployee);
                 });
+        EntityModel<Employee> employeeEntityModel = assembler.toModel(newEmployee);
+        return ResponseEntity.created(employeeEntityModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .body(employeeEntityModel);
     }
 
     /**
@@ -89,11 +93,8 @@ class EmployeeController {
      * @param id: The employee to be deleted
      */
     @DeleteMapping("/employees/{id}")
-    void deleteEmployee(@PathVariable Long id) {
-        try {
-            employeeRepo.deleteById(id);
-        } catch (EmptyResultDataAccessException e) {
-            log.info("Employee ID" + String.valueOf(id) + " not found");
-        }
+    ResponseEntity<?> deleteEmployee(@PathVariable Long id) {
+        employeeRepo.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }
