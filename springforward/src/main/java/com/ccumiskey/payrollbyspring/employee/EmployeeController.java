@@ -31,7 +31,7 @@ public class EmployeeController {
      * @return All of the employees on the database
      */
     @GetMapping("/employees")
-    CollectionModel<EntityModel<Employee>> all() {
+    public CollectionModel<EntityModel<Employee>> all() {
         List<EntityModel<Employee>> employees = employeeRepo.findAll().stream()
                 .map(assembler::toModel)
                 .collect(Collectors.toList());
